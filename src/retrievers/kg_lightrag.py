@@ -33,7 +33,7 @@ class KGLightRAG(BaseRetriever):
             # Use Ollama embedding function
             embedding_func=EmbeddingFunc(
                 embedding_dim=LIGHTRAG_EMBEDDING_DIM,
-                max_token_size=LIGHTRAG_LLM_MAX_TOKEN_SIZE,
+                max_token_size=LIGHTRAG_EMBEDDING_MAX_TOKEN_SIZE,
                 # seems to have no effect when func=ollama_embed, bc ollama_embed does not use this arg/kwarg
                 func=lambda texts: ollama_embed(
                     texts,
@@ -128,11 +128,11 @@ class KGLightRAG(BaseRetriever):
                 file_paths.append(document_file)
                 documents.append(document)
                 iteration += 1
-                if iteration % 1 == 0:
+                if iteration % 2 == 0:
                     await ins(documents, ids, file_paths)
                     print("Token usage after iteration ", iteration, ": ", str(self.__token_tracker.get_usage()))
                     ids, documents, file_paths = [], [], []
-            if iteration % 12 != 0:
+            if iteration % 2 != 0:
                 await ins(documents, ids, file_paths)
 
         except Exception as e:
