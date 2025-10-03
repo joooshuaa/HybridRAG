@@ -5,8 +5,10 @@ import json
 
 from lightrag import LightRAG
 from lightrag.llm.ollama import ollama_model_complete, ollama_embed
+from lightrag.llm.hf import hf_model_complete, hf_embed
 from lightrag.kg.shared_storage import initialize_pipeline_status
 from lightrag.utils import EmbeddingFunc, setup_logger, TokenTracker
+from transformers import AutoModel, AutoTokenizer
 
 from config import *
 
@@ -26,7 +28,7 @@ class KGLightRAG(BaseRetriever):
 
         self.__rag = LightRAG(
             working_dir=LIGHTRAG_STORAGE_DIR,
-            llm_model_func=ollama_model_complete,  # Use Ollama model for text generation
+            llm_model_func=hf_model_complete,
             llm_model_name=LIGHTRAG_LLM_NAME,
             llm_model_kwargs={"options": {"num_ctx": LIGHTRAG_LLM_MAX_TOKEN_SIZE}},
             max_parallel_insert=LIGHTRAG_MAX_PARALLEL_INSERT,
@@ -35,12 +37,31 @@ class KGLightRAG(BaseRetriever):
                 embedding_dim=LIGHTRAG_EMBEDDING_DIM,
                 max_token_size=LIGHTRAG_EMBEDDING_MAX_TOKEN_SIZE,
                 # seems to have no effect when func=ollama_embed, bc ollama_embed does not use this arg/kwarg
-                func=lambda texts: ollama_embed(
+                func=lambda texts: hf_embed(
                     texts,
-                    embed_model=LIGHTRAG_EMBEDDING_MODEL_NAME
+                    tokenizer=AutoTokenizer.from_pretrained(LIGHTRAG_EMBEDDING_MODEL_NAME),
+                    embed_model=AutoModel.from_pretrained(LIGHTRAG_EMBEDDING_MODEL_NAME)
                 )
             ),
         )
+
+        #self.__rag = LightRAG(
+        #    working_dir=LIGHTRAG_STORAGE_DIR,
+        #    llm_model_func=ollama_model_complete,  # Use Ollama model for text generation
+        #    llm_model_name=LIGHTRAG_LLM_NAME,
+        #    llm_model_kwargs={"options": {"num_ctx": LIGHTRAG_LLM_MAX_TOKEN_SIZE}},
+        #    max_parallel_insert=LIGHTRAG_MAX_PARALLEL_INSERT,
+        #    # Use Ollama embedding function
+        #    embedding_func=EmbeddingFunc(
+        #        embedding_dim=LIGHTRAG_EMBEDDING_DIM,
+        #        max_token_size=LIGHTRAG_EMBEDDING_MAX_TOKEN_SIZE,
+        #        # seems to have no effect when func=ollama_embed, bc ollama_embed does not use this arg/kwarg
+        #        func=lambda texts: ollama_embed(
+        #            texts,
+        #            embed_model=LIGHTRAG_EMBEDDING_MODEL_NAME
+        #        )
+        #    ),
+        #)
         # IMPORTANT: Both initialization calls are required!
         asyncio.run(self.__rag.initialize_storages())  # Initialize storage backends
         asyncio.run(initialize_pipeline_status())  # Initialize processing pipeline
