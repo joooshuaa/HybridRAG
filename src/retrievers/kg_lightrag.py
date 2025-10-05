@@ -78,7 +78,7 @@ class KGLightRAG(BaseRetriever):
             document_files = os.listdir(directory)
             ids, documents, file_paths = [], [], []
             document = ""
-            iteration = 1
+            iteration = 0
             chunk_separator = "\n"
 
             async def ins(d, i, p):
@@ -139,16 +139,16 @@ class KGLightRAG(BaseRetriever):
                     await ins(documents, ids, file_paths)
 
             for document_file in document_files:
+                iteration += 1
                 full_file_path = os.path.join(DATA_DIR_PATH, document_file)
                 with open(full_file_path, 'r') as f:
                     document = ""
                     for line in f:
                         line = json.loads(line)
-                        document += line["title"] + ": " + line["text"] + "\n"
+                        document += line["title"] + "\t" + line["text"] + "\n"
                 ids.append(document_file + "_iter_" + str(iteration))
                 file_paths.append(document_file)
                 documents.append(document)
-                iteration += 1
                 if iteration % 2 == 0:
                     await ins(documents, ids, file_paths)
                     print("Token usage after iteration ", iteration, ": ", str(self.__token_tracker.get_usage()))
